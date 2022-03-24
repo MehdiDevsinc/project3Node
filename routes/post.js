@@ -1,51 +1,94 @@
-import { Router } from "express";
-
+import { Router } from 'express';
+import { Post } from '../database/models';
 
 const router = Router();
 
-//---post a post
-router.post('/', async (req,res) => {
+// Create blog post
+router.post('/posts', async (req, res) => {
     try {
-        res.send( 'creating a post ');
-    } catch (error) {
-        res.status(500).json({message: error.message});
-    }
-})
+        userId = req.body.id
+        const { title, content } = req.body;
+  
+        const post = await Post.create({
+            title,
+            content,
+            userId
+        });
 
-//---get a post
-router.get ('/:id', async (req,res) => {
-    try {
-        res.send ('get a specific post');
+        return res.status(201).json({ post });
     } catch (error) {
-        res.status(500).json({message: error.message});
+        res.status(500).json({ message: error.message });
     }
-})
+});
 
-//---update a post
-router.patch ('/:id', async (req, res) => {
-    try {
-        res.send ("update a specific post");
-    } catch (error) {
-        res.status(500).json({message: error.message});
-    }
-})
 
-//---get all posts
-router.get ('/', async (req, res ) => {
+// Get all posts
+router.get('/posts', async (req, res) => {
     try {
-        res.send ('get all posts');
+        const posts = await Post.findAll();
+        return res.status(200).json({ posts });
     } catch (error) {
-        res.status(500).json ({message: error.message});
+        res.status(500).json({ message: error.message });
     }
-})
+});
 
-//----delete a specific post
-router.delete ('/:id', async (req, res) => {
+
+// Get post by id
+router.get('/posts/:id', async (req, res) => {
     try {
-        res.send ("delete a specific post");
+        
+        const post = await Post.findOne({
+            where: { id: req.params.id }
+        });
+
+        if(!post) {
+            return res.status(404).json({ message: 'the post with the given id was not found' });
+        }
+
+        return res.status(200).json({ post });
     } catch (error) {
-        res.status(500).json({message: error.message});
+        res.status(500).json({ message: error.message });
     }
-})
+});
+
+
+// Update post
+router.patch('/posts/:id', async (req, res) => {
+    try {
+        userId = req.body.id
+        const { title, content } = req.body;
+        const posts = await Post.update(
+        { title, content },
+        {
+            returning: true,
+            where: { id: req.params.id }
+        }
+        );
+    
+        if (posts[0] === 0)
+            return res.status(404).json({ message: 'The post with the given id was not found' });
+        
+        const post = posts[1][0].dataValues;
+
+        return res.status(200).json({ post });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+
+// Delete post
+router.delete('/posts/:id', async (req, res) => {
+    try {
+        
+        const post = await Post.destroy({ where: { id: req.params.id } });
+        if (!post)
+            return res.status(404).json({ message: 'The post with the given id was not found' });
+    
+        return res.status(200).json({ message: 'The post was deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
 
 export default router;
